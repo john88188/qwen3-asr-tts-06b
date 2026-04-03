@@ -1,0 +1,15 @@
+accelerate==1.12.0
+fastapi
+huggingface_hub
+librosa
+nagisa==0.2.11
+python-multipart
+qwen-omni-utils
+qwen-tts==0.1.1
+requests
+sentencepiece
+soundfile
+sox
+soynlp==0.0.493
+transformers==4.57.3
+uvicorn

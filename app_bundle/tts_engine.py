@@ -1,4 +1,5 @@
 import io
+import inspect
 import os
 import wave
 from dataclasses import dataclass
@@ -137,6 +138,17 @@ class TTSEngine:
                 out.append(normalized)
         return out
 
+    def _generate_custom_voice_call(self, **kwargs: Any):
+        sig = inspect.signature(self.model.generate_custom_voice)
+        filtered: dict[str, Any] = {}
+        for key, value in kwargs.items():
+            if key not in sig.parameters:
+                continue
+            if value is None:
+                continue
+            filtered[key] = value
+        return self.model.generate_custom_voice(**filtered)
+
     def synthesize_custom_voice(
         self,
         text: str,
@@ -156,7 +168,7 @@ class TTSEngine:
         gen_kwargs: dict[str, Any] = dict(generation_kwargs or {})
         gen_kwargs["max_new_tokens"] = int(max_new_tokens or self.config.max_new_tokens)
 
-        wavs, sample_rate = self.model.generate_custom_voice(
+        wavs, sample_rate = self._generate_custom_voice_call(
             text=content,
             language=final_language,
             speaker=final_speaker,

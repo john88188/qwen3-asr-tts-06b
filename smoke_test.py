@@ -90,7 +90,12 @@ def tts_synthesize_to_file(
         headers=_auth_headers(api_key),
         timeout=timeout,
     )
-    resp.raise_for_status()
+    if resp.status_code >= 400:
+        try:
+            detail = resp.json()
+        except Exception:  # noqa: BLE001
+            detail = resp.text
+        raise RuntimeError(f"TTS smoke test failed: HTTP {resp.status_code}: {detail}")
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)

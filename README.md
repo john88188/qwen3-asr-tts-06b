@@ -7,6 +7,8 @@
 - `qwen_asr_tts_api_colab.ipynb`: Colab notebook，负责安装依赖、下载模型、启动 API。
 - `colab_runtime.py`: notebook 调用的辅助脚本，负责安装、模型下载、环境变量和 API 进程管理。
 - `smoke_test.py`: Colab 侧冒烟测试工具，负责 GPU、`/healthz`、TTS 和可选 ASR 验证。
+- `app_bundle/`: 当前服务代码快照，供独立 `colab/` 仓库直接启动 API。
+- `refresh_app_bundle.py`: 从父项目根目录同步最新服务代码到 `app_bundle/`。
 - `requirements-colab.txt`: Colab Python 依赖清单。
 
 ## 使用方式
@@ -14,7 +16,8 @@
 1. 在 Colab 中打开 `colab/qwen_asr_tts_api_colab.ipynb`。
 2. 连接 `GPU` 运行时。
 3. 修改第一个配置单元：
-   - 如果你会在 Colab 中 `git clone` 当前项目，填 `REPO_GIT_URL`。
+   - 如果你会在 Colab 中 `git clone` 仓库，填 `REPO_GIT_URL`。
+   - 如果仓库是 GitHub 私有仓库，填 `GITHUB_TOKEN`。
    - 如果项目已经放在 Google Drive，改 `DRIVE_REPO_DIR`。
 4. 依次运行 notebook 单元。
 
@@ -27,7 +30,10 @@
 
 ## 说明
 
-- notebook 会复用根目录已有的 `api_server.py`、`asr_engine.py`、`tts_engine.py`，不会改动根目录文件。
+- notebook 支持两种布局：
+  - 完整项目仓库：直接使用根目录的 `api_server.py`、`asr_engine.py`、`tts_engine.py`
+  - 独立 `colab/` 仓库：使用 `app_bundle/` 中打包好的服务代码
 - 默认支持把模型下载到 Google Drive，这样下次启动可复用，不必重新下载。
 - 可选开启 `Cloudflare Tunnel`，把 Colab 内部的 `8000` 端口暴露为公网地址。
 - 如果你只需要 ASR，可以把配置里的 `ENABLE_TTS` 设为 `False`，减少模型下载和显存占用。
+- 如果父项目代码更新了，重新运行 `python refresh_app_bundle.py` 后再提交 `colab/` 仓库。

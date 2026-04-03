@@ -43,11 +43,34 @@ def install_system_packages() -> None:
     _run(["apt-get", "install", "-y", "ffmpeg", "git", "libsndfile1", "sox"])
 
 
+def find_requirements_file(workspace_dir: str | Path) -> Path:
+    workspace_dir = Path(workspace_dir).resolve()
+    candidates = [
+        workspace_dir / "requirements-colab.txt",
+        workspace_dir / "colab" / "requirements-colab.txt",
+    ]
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    raise FileNotFoundError(f"requirements-colab.txt not found under workspace dir: {workspace_dir}")
+
+
+def resolve_app_dir(workspace_dir: str | Path) -> Path:
+    workspace_dir = Path(workspace_dir).resolve()
+    candidates = [
+        workspace_dir,
+        workspace_dir / "app_bundle",
+        workspace_dir / "colab" / "app_bundle",
+    ]
+    for candidate in candidates:
+        if (candidate / "api_server.py").is_file():
+            return candidate
+    raise FileNotFoundError(f"api_server.py not found under workspace dir: {workspace_dir}")
+
+
 def install_python_packages(repo_dir: str | Path, *, torch_install_mode: str = "auto") -> None:
     repo_dir = Path(repo_dir).resolve()
-    requirements_file = repo_dir / "colab" / "requirements-colab.txt"
-    if not requirements_file.is_file():
-        raise FileNotFoundError(f"requirements file not found: {requirements_file}")
+    requirements_file = find_requirements_file(repo_dir)
 
     mode = (torch_install_mode or "auto").strip().lower()
     if mode not in {"auto", "force", "skip"}:
@@ -164,7 +187,7 @@ def build_runtime_env(
     tts_max_new_tokens_limit: int = 512,
     tts_attn_implementation: Optional[str] = None,
 ) -> dict[str, str]:
-    repo_dir = Path(repo_dir).resolve()
+    repo_dir = resolve_app_dir(repo_dir)
     runtime_root = Path(runtime_root).resolve()
     models_root = Path(models_root).resolve()
     home_dir = runtime_root / "home"
@@ -221,8 +244,6 @@ def build_runtime_env(
     else:
         env.pop("TTS_ATTN_IMPLEMENTATION", None)
 
-    if not (repo_dir / "api_server.py").is_file():
-        raise FileNotFoundError(f"api_server.py not found under repo dir: {repo_dir}")
     if not Path(env["ASR_MODEL_DIR"]).is_dir():
         raise FileNotFoundError(f"ASR model dir not found: {env['ASR_MODEL_DIR']}")
     if enable_tts and not Path(env["TTS_MODEL_DIR"]).is_dir():
@@ -362,7 +383,7 @@ def launch_api(
     start_cloudflared_tunnel_flag: bool = False,
     startup_timeout_s: int = 900,
 ) -> ServiceSession:
-    repo_dir = Path(repo_dir).resolve()
+    repo_dir = resolve_app_dir(repo_dir)
     runtime_root = Path(runtime_root).resolve()
     env = build_runtime_env(
         repo_dir=repo_dir,
